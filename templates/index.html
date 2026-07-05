@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Touchscreen Kiosk Portal</title>
+
+    <!-- Google Fonts for premium typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Link to custom styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <!-- Main Kiosk Container -->
+    <div id="kiosk-container" class="kiosk-container">
+
+        <!-- Sidebar Navigation (200px wide) -->
+        <aside id="kiosk-sidebar" class="kiosk-sidebar">
+            <div class="sidebar-header">
+                <div class="brand-logo">
+                    <!-- Elegant Custom SVG Logo -->
+                    <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                        <line x1="8" y1="21" x2="16" y2="21"></line>
+                        <line x1="12" y1="17" x2="12" y2="21"></line>
+                    </svg>
+                </div>
+                <h1 class="brand-title">PAVE Kiosk</h1>
+            </div>
+
+            <nav id="kiosk-nav" class="sidebar-nav">
+                <!-- Button for Site 1 -->
+                <button id="btn-site-1" class="nav-button active" data-url="{{ site_1_url }}"
+                    aria-label="Load {{ site_1_title }}">
+                    <div class="button-icon">
+                        <!-- Book / Cases SVG Icon -->
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="button-text">{{ site_1_title }}</span>
+                </button>
+
+                <!-- Button for Site 2 -->
+                <button id="btn-site-2" class="nav-button" data-url="{{ site_2_url }}"
+                    aria-label="Load {{ site_2_title }}">
+                    <div class="button-icon">
+                        <!-- Message bubble SVG Icon -->
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <span class="button-text">{{ site_2_title }}</span>
+                </button>
+
+                <!-- Button for Site 3 (Citizens Track) -->
+                <button id="btn-site-3" class="nav-button" data-url="{{ site_3_url }}"
+                    aria-label="Load {{ site_3_title }}">
+                    <div class="button-icon">
+                        <!-- Globe / Network SVG Icon -->
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <path
+                                d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z">
+                            </path>
+                        </svg>
+                    </div>
+                    <span class="button-text">{{ site_3_title }}</span>
+                </button>
+
+                <!-- Button for Get updates -->
+                <button id="btn-get-updates" class="nav-button" data-url="/proxy/site3/#subscribe"
+                    aria-label="Get updates">
+                    <div class="button-icon">
+                        <!-- Mail / Mailbox SVG Icon -->
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <span class="button-text">Get updates</span>
+                </button>
+            </nav>
+
+            <!-- Sidebar Footer Utilities -->
+            <div class="sidebar-footer">
+                <!-- Connectivity Badge -->
+                <div id="connection-status" class="status-badge online">
+                    <span class="status-dot"></span>
+                    <span id="status-text" class="status-text">Online</span>
+                </div>
+
+                <div class="utility-actions">
+                    <!-- Refresh Current Iframe -->
+                    <button id="btn-refresh" class="utility-button" title="Refresh Current Page"
+                        aria-label="Refresh Current Page">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+                        </svg>
+                        <span>Refresh</span>
+                    </button>
+
+                    <!-- Reset Kiosk to Default -->
+                    <button id="btn-reset" class="utility-button" title="Reset Kiosk" aria-label="Reset Kiosk">
+                        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                        <span>Home</span>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main id="kiosk-main" class="kiosk-main">
+            <!-- Iframe Loading Overlay Spinner -->
+            <div id="loader-overlay" class="loader-overlay">
+                <div class="loader-spinner"></div>
+                <p class="loader-text">Loading page...</p>
+            </div>
+
+            <!-- Offline Screen Overlay -->
+            <div id="offline-overlay" class="offline-overlay hidden">
+                <div class="offline-card">
+                    <div class="offline-icon">
+                        <svg viewBox="0 0 24 24" width="48" height="48" fill="none" stroke="currentColor"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="1" y1="1" x2="23" y2="23"></line>
+                            <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.5"></path>
+                            <path d="M5 12.5a10.94 10.94 0 0 1 5.83-2.84"></path>
+                            <path d="M12 18.5a4.25 4.25 0 0 1-3.23-1.47"></path>
+                            <path d="M16.27 16.27A4.24 4.24 0 0 1 12 18.5"></path>
+                            <path d="M9.17 9.17A16.06 16.06 0 0 1 12 8.5c2.4 0 4.67.53 6.71 1.48"></path>
+                            <path d="M1 18.5a17.06 17.06 0 0 1 3.56-2.52"></path>
+                        </svg>
+                    </div>
+                    <h2>No Connection</h2>
+                    <p>This kiosk requires an active internet connection. We are trying to reconnect...</p>
+                    <button id="btn-reconnect" class="reconnect-button">Retry Now</button>
+                </div>
+            </div>
+
+            <!-- The Main Iframe Viewport -->
+            <iframe id="kiosk-iframe" class="kiosk-iframe" src="{{ site_1_url }}" frameborder="0"
+                allow="autoplay; encrypted-media; picture-in-picture"
+                sandbox="allow-scripts allow-same-origin allow-forms"></iframe>
+        </main>
+
+    </div>
+
+    <!-- External Link QR Modal -->
+    <div id="link-modal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <div class="modal-close-bar">
+                <button id="btn-close-modal" class="close-modal-button" aria-label="Close modal">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-icon">
+                    <svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" stroke-width="2.2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+                        <line x1="12" y1="18" x2="12.01" y2="18"></line>
+                    </svg>
+                </div>
+                <h2>Scan to open link on your phone</h2>
+                <p class="modal-msg">Follow your link with this code:</p>
+                <div id="modal-target-url" class="modal-target-url"></div>
+                <div class="qr-container">
+                    <div id="qrcode" class="qrcode-box"></div>
+                </div>
+
+                <div class="modal-timeout-indicator">Closing in <span id="modal-timer">15</span>s...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Code Generator Library (Offline-ready) -->
+    <script src="{{ url_for('static', filename='js/qrcode.min.js') }}"></script>
+    <!-- Main JavaScript Logic -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>
