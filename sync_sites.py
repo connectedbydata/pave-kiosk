@@ -402,6 +402,21 @@ def sync_lets_talk_ai():
                                 assets_queue.append(resolved_u)
                     except Exception as e:
                         print(f"    Error scanning CSS {clean_asset_path}: {e}")
+                        
+                # Scan JS for assets/images
+                if clean_asset_path.endswith(".js"):
+                    try:
+                        with open(local_asset_path, "r", encoding="utf-8", errors="ignore") as f:
+                            js_content = f.read()
+                        
+                        # Find all local assets paths starting with /toons/assets/ or /wp-content/ or /toons/js/
+                        urls = re.findall(r'[\'"]((?:/toons/assets/|/wp-content/|/toons/js/)[^\'"]+?\.(?:webp|png|jpg|jpeg|gif|svg|woff2|woff|ttf|eot|css|js))[\'"]', js_content)
+                        for u in urls:
+                            resolved_u = urljoin(start_url, u)
+                            if resolved_u not in assets_queue:
+                                assets_queue.append(resolved_u)
+                    except Exception as e:
+                        print(f"    Error scanning JS {clean_asset_path}: {e}")
             else:
                 print(f"    Failed download: status {r.status_code}")
         except Exception as e:
