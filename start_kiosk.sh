@@ -45,7 +45,7 @@ echo "Waiting for Flask server to start..."
 MAX_ATTEMPTS=30
 ATTEMPT=0
 while true; do
-    if curl -s -f "$URL/health" &>/dev/null; then
+    if curl -s -f "http://$HOST:$PORT/health" &>/dev/null; then
         echo "Flask server is up and healthy."
         break
     fi
