@@ -220,6 +220,8 @@ def sync_pave():
     os.makedirs(dest_dir, exist_ok=True)
     
     print("Installing bundle gems...")
+    if not run_command(["bundle", "config", "set", "--local", "path", "vendor/bundle"], cwd=pave_path):
+        return False
     if not run_command(["bundle", "install"], cwd=pave_path):
         return False
         
@@ -248,6 +250,8 @@ def sync_citizens_track():
     
     # 1. Build with Jekyll
     print("Installing bundle gems...")
+    if not run_command(["bundle", "config", "set", "--local", "path", "vendor/bundle"], cwd=ct_path):
+        return False
     if not run_command(["bundle", "install"], cwd=ct_path):
         return False
         
