@@ -1,7 +1,7 @@
 import os
 import re
 import requests
-from flask import Flask, render_template, redirect, request, Response
+from flask import Flask, render_template, redirect, request, Response, send_from_directory
 
 app = Flask(__name__)
 
@@ -17,71 +17,62 @@ app.config.update(
     SITE_3_URL="https://www.citizens-track.org/?kiosk",
 )
 
-def rewrite_content(content, site_id, content_type):
+def serve_local(site_id, subpath=""):
+    # Normalize paths to prevent path traversal
+    if ".." in subpath or subpath.startswith("/"):
+        return "Forbidden", 403
+        
+    sites_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sites")
+    
     if site_id == "site1":
-        target_domain = "pave-live.pairs.site"
-        proxy_prefix = ""  # Root proxied, no prefix needed
+        site_dir = os.path.join(sites_dir, "site1")
     elif site_id == "site2":
-        target_domain = "www.letstalkai.org.uk"
-        proxy_prefix = "/proxy/site2"
+        site_dir = os.path.join(sites_dir, "site2")
     elif site_id == "site3":
-        target_domain = "www.citizens-track.org"
-        proxy_prefix = "/proxy/site3"
+        site_dir = os.path.join(sites_dir, "site3")
     else:
-        return content
+        return "Not Found", 404
 
-    if "text/html" in content_type:
-        # 1. Rewrite absolute target domains (with or without protocol)
-        content = re.sub(
-            rf'(https?:)?//({target_domain}|letstalkai.org.uk|citizens-track.org)',
-            proxy_prefix,
-            content
-        )
+    # If the local site directory does not exist, return a friendly message
+    if not os.path.exists(site_dir):
+        return f"Site directory not found. Please run 'python sync_sites.py' to fetch and compile the sites first.", 503
 
-        # 2. Rewrite root-relative paths in href, src, action attributes
-        # (Only if prefix is not empty, since root-relative is already correct for site1)
-        if proxy_prefix:
-            def replace_html_attr(match):
-                attr = match.group("attr")
-                path = match.group("path")
-                if path.startswith("/proxy/") or path.startswith("http://") or path.startswith("https://") or path.startswith("javascript:") or path.startswith("#"):
-                    return match.group(0)
-                return f'{attr}="{proxy_prefix}{path}"'
+    # Normalize subpath for directories
+    if not subpath:
+        subpath = "index.html"
+    elif subpath.endswith("/"):
+        subpath += "index.html"
 
-            content = re.sub(
-                r'(?P<attr>href|src|action)=\"(?P<path>/[^\"]*)\"',
-                replace_html_attr,
-                content
-            )
+    full_path = os.path.join(site_dir, subpath)
 
-            def replace_html_attr_single(match):
-                attr = match.group("attr")
-                path = match.group("path")
-                if path.startswith("/proxy/") or path.startswith("http://") or path.startswith("https://") or path.startswith("javascript:") or path.startswith("#"):
-                    return match.group(0)
-                return f"{attr}='{proxy_prefix}{path}'"
+    # Check if this resolves to a directory without a trailing slash
+    if os.path.isdir(full_path):
+        # Redirect to ensure proper relative asset resolution in browser
+        return redirect(request.path + "/", code=301)
 
-            content = re.sub(
-                r"(?P<attr>href|src|action)=\'(?P<path>/[^\']*)\'",
-                replace_html_attr_single,
-                content
-            )
+    # If file doesn't exist, return 404
+    if not os.path.exists(full_path):
+        return "Not Found", 404
 
-        return content
+    # If it is HTML, we dynamically inject get_injected_js(site_id)
+    if full_path.endswith(".html"):
+        try:
+            with open(full_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+            
+            injection = get_injected_js(site_id)
+            if "</body>" in content:
+                content = content.replace("</body>", f"{injection}</body>")
+            else:
+                content += injection
+            return Response(content, content_type="text/html")
+        except Exception as e:
+            return f"Error reading file: {str(e)}", 500
 
-    elif "text/css" in content_type:
-        # Rewrite root-relative URLs in stylesheets (only if we have a prefix)
-        if proxy_prefix:
-            def replace_css_url(match):
-                path = match.group(1)
-                if path.startswith("/proxy/") or path.startswith("http://") or path.startswith("https://") or path.startswith("data:"):
-                    return match.group(0)
-                return f"url({proxy_prefix}{path})"
-
-            content = re.sub(r'url\([\'\"]?(/[^\'\"]+)[\'\"]?\)', replace_css_url, content)
-        return content
-
-    return content
+    # Otherwise serve static assets normally
+    directory = os.path.dirname(full_path)
+    filename = os.path.basename(full_path)
+    return send_from_directory(directory, filename)
 
 def get_injected_js(site_id):
     # Interception script injected inside the proxied iframe pages
@@ -187,95 +178,19 @@ def proxy_redirect(site_id):
         return redirect(f"/proxy/{site_id}/", code=301)
     return "Not Found", 404
 
-# Proxied Site 2 and Site 3 routes
+# Local Site 2 and Site 3 routes
 @app.route("/proxy/<site_id>/")
 @app.route("/proxy/<site_id>/<path:subpath>")
 def proxy_route(site_id, subpath=""):
     if site_id not in ["site2", "site3"]:
         return "Not Found", 404
-    return proxy(site_id, subpath)
+    return serve_local(site_id, subpath)
 
-# Core proxy runner helper
-def proxy(site_id, subpath=""):
-    if site_id == "site1":
-        target_base = app.config["SITE_1_URL"]
-    elif site_id == "site2":
-        target_base = app.config["SITE_2_URL"]
-    elif site_id == "site3":
-        target_base = app.config["SITE_3_URL"]
-    else:
-        return "Not Found", 404
-
-    # Build target URL
-    from urllib.parse import urljoin
-    target_url = urljoin(target_base, subpath)
-    if request.query_string:
-        decoded_query = request.query_string.decode('utf-8')
-        if "?" in target_url:
-            target_url += f"&{decoded_query}"
-        else:
-            target_url += f"?{decoded_query}"
-
-    # Set headers
-    headers = {
-        "User-Agent": request.headers.get("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Kiosk/1.0"),
-        "Accept": request.headers.get("Accept"),
-        "Accept-Language": request.headers.get("Accept-Language")
-    }
-
-    try:
-        resp = requests.get(target_url, headers=headers, allow_redirects=True, timeout=10)
-    except Exception as e:
-        return f"Kiosk Proxy Error: Could not load target resource. Details: {str(e)}", 502
-
-    content_type = resp.headers.get("Content-Type", "")
-
-    if "text/html" in content_type:
-        # Prevent requests default ISO-8859-1 decoding for UTF-8 pages when charset header is missing
-        encoding = resp.encoding
-        if not encoding or encoding.lower() == 'iso-8859-1':
-            encoding = 'utf-8'
-        try:
-            html_content = resp.content.decode(encoding, errors='replace')
-        except Exception:
-            html_content = resp.text
-
-        html_content = rewrite_content(html_content, site_id, content_type)
-        
-        # Inject script
-        injection = get_injected_js(site_id)
-        if "</body>" in html_content:
-            html_content = html_content.replace("</body>", f"{injection}</body>")
-        else:
-            html_content += injection
-            
-        return Response(html_content, status=resp.status_code, content_type=content_type)
-        
-    elif "text/css" in content_type:
-        encoding = resp.encoding
-        if not encoding or encoding.lower() == 'iso-8859-1':
-            encoding = 'utf-8'
-        try:
-            css_content = resp.content.decode(encoding, errors='replace')
-        except Exception:
-            css_content = resp.text
-
-        css_content = rewrite_content(css_content, site_id, content_type)
-        return Response(css_content, status=resp.status_code, content_type=content_type)
-        
-    else:
-        # Static binary assets (images, fonts, JS, etc.)
-        excluded_headers = ['content-encoding', 'content-length', 'transfer-encoding', 'connection']
-        headers_to_forward = [(name, value) for name, value in resp.raw.headers.items()
-                              if name.lower() not in excluded_headers]
-        
-        return Response(resp.content, status=resp.status_code, headers=headers_to_forward, content_type=content_type)
-
-# Core root proxy handler (matches anything that doesn't match other routes)
+# Core root handler (matches anything that doesn't match other routes)
 @app.route("/", defaults={"subpath": ""})
 @app.route("/<path:subpath>")
-def root_proxy(subpath=""):
-    # Exclude system static assets, proxy routes, health checks, and kiosk portal from being proxied to site1
+def root_route(subpath=""):
+    # Exclude system static assets, proxy routes, health checks, and kiosk portal
     if subpath.startswith("static/") or subpath.startswith("proxy/") or subpath == "health" or subpath == "kiosk" or subpath.startswith("kiosk/"):
         return "Not Found", 404
         
@@ -286,8 +201,8 @@ def root_proxy(subpath=""):
     elif "/proxy/site3" in referer:
         return redirect(f"/proxy/site3/{subpath}", code=302)
 
-    # Otherwise, it belongs to Site 1 (PAVE Case Book) which is at the root!
-    return proxy("site1", subpath)
+    # Otherwise, it belongs to Site 1 (PAVE Case Book) which is served locally!
+    return serve_local("site1", subpath)
 
 @app.route("/health")
 def health():
