@@ -174,7 +174,7 @@ def rewrite_offline_links(dest_dir, site_id):
                     
                     # 3. Rewrite PAVE Case Book absolute references
                     content = re.sub(
-                        r'(https?:)?//pave-live\.pairs\.site',
+                        r'(https?:)?//(pave-live|pave)\.pairs\.site',
                         '',  # Maps to root "/"
                         content
                     )

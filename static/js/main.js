@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function pingInternet() {
         try {
             // Check internet by fetching the target server with a cache-buster
-            await fetch("https://pave-live.pairs.site/favicon.ico", {
+            await fetch("https://pave.pairs.site/favicon.ico", {
                 mode: "no-cors",
                 cache: "no-store",
                 method: "HEAD", // lighter request

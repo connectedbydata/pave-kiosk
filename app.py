@@ -10,11 +10,11 @@ app.config.update(
     PORT=int(os.environ.get("KIOSK_PORT", 8080)),
     HOST=os.environ.get("KIOSK_HOST", "0.0.0.0"),
     SITE_1_TITLE="PAVE Case Book",
-    SITE_1_URL="https://pave-live.pairs.site/",
+    SITE_1_URL="https://pave.pairs.site/",
     SITE_2_TITLE="Let's Talk AI",
     SITE_2_URL="https://www.letstalkai.org.uk/",
     SITE_3_TITLE="Citizens Track",
-    SITE_3_URL="https://www.citizens-track.org/?kiosk",
+    SITE_3_URL="https://citizens-track.org/?kiosk",
 )
 
 def serve_local(site_id, subpath=""):
@@ -90,13 +90,13 @@ def get_injected_js(site_id):
                     }
                     if (targetUrl.pathname.startsWith('/proxy/site3/')) {
                         var subpath = targetUrl.pathname.substring('/proxy/site3'.length);
-                        return 'https://www.citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
+                        return 'https://citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
                     }
                     if (targetUrl.pathname.startsWith('/kiosk/')) {
                         return targetUrl.href;
                     }
                     // Site 1 (served at root /)
-                    return 'https://pave-live.pairs.site' + targetUrl.pathname + targetUrl.search + targetUrl.hash;
+                    return 'https://pave.pairs.site' + targetUrl.pathname + targetUrl.search + targetUrl.hash;
                 }
                 return targetUrl.href;
             } catch(e) {
@@ -121,13 +121,13 @@ def get_injected_js(site_id):
                 
                 // Direct domain match mappings
                 var host = targetUrl.hostname;
-                if (host === "pave-live.pairs.site" || host.endsWith(".pave-live.pairs.site")) {
+                if (host === "pave.pairs.site" || host.endsWith(".pave.pairs.site")) {
                     return 'site1';
                 }
                 if (host === "www.letstalkai.org.uk" || host === "letstalkai.org.uk" || host.endsWith(".letstalkai.org.uk")) {
                     return 'site2';
                 }
-                if (host === "www.citizens-track.org" || host === "citizens-track.org" || host.endsWith(".citizens-track.org")) {
+                if (host === "citizens-track.org" || host === "www.citizens-track.org" || host.endsWith(".citizens-track.org")) {
                     return 'site3';
                 }
             } catch(e) {}

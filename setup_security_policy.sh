@@ -21,7 +21,7 @@ POLICY_JSON='{
   "URLAllowlist": [
     "http://localhost:*/*",
     "http://127.0.0.1:*/*",
-    "https://pave-live.pairs.site/*",
+    "https://pave.pairs.site/*",
     "https://www.letstalkai.org.uk/*",
     "https://www.citizens-track.org/*",
     "https://citizens-track.org/*",
