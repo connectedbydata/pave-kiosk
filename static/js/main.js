@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnRefresh = document.getElementById("btn-refresh");
     const btnReset = document.getElementById("btn-reset");
     const btnReconnect = document.getElementById("btn-reconnect");
+    const btnGetUpdates = document.getElementById("btn-get-updates");
 
     // QR Code Modal DOM Elements
     const linkModal = document.getElementById("link-modal");
@@ -97,6 +98,9 @@ document.addEventListener("DOMContentLoaded", () => {
             connectionStatus.classList.add("online");
             statusText.textContent = "Online";
             offlineOverlay.classList.add("hidden");
+            if (btnGetUpdates) {
+                btnGetUpdates.style.display = "flex";
+            }
         } else {
             connectionStatus.classList.remove("online");
             connectionStatus.classList.add("offline");
@@ -104,6 +108,9 @@ document.addEventListener("DOMContentLoaded", () => {
             // Kiosk is designed to run from local files offline.
             // Do not show blocking offline screen overlay.
             offlineOverlay.classList.add("hidden");
+            if (btnGetUpdates) {
+                btnGetUpdates.style.display = "none";
+            }
         }
     }
 

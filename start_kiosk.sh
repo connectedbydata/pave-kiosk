@@ -111,6 +111,7 @@ else
                 --disable-session-crashed-bubble \
                 --disable-translate \
                 --check-for-update-interval=31536000 \
+                --password-store=basic \
                 "$URL"
         fi
     fi

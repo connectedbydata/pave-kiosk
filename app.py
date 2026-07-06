@@ -84,19 +84,37 @@ def get_injected_js(site_id):
             try {
                 var targetUrl = new URL(urlStr, window.location.href);
                 if (targetUrl.origin === window.location.origin) {
+                    // Determine which site context we are in (based on target URL path first, then current page path)
+                    var siteId = null;
+                    var subpath = targetUrl.pathname;
+                    
                     if (targetUrl.pathname.startsWith('/proxy/site2/')) {
-                        var subpath = targetUrl.pathname.substring('/proxy/site2'.length);
-                        return 'https://www.letstalkai.org.uk' + subpath + targetUrl.search + targetUrl.hash;
-                    }
-                    if (targetUrl.pathname.startsWith('/proxy/site3/')) {
-                        var subpath = targetUrl.pathname.substring('/proxy/site3'.length);
-                        return 'https://citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
-                    }
-                    if (targetUrl.pathname.startsWith('/kiosk/')) {
+                        siteId = 'site2';
+                        subpath = targetUrl.pathname.substring('/proxy/site2'.length);
+                    } else if (targetUrl.pathname.startsWith('/proxy/site3/')) {
+                        siteId = 'site3';
+                        subpath = targetUrl.pathname.substring('/proxy/site3'.length);
+                    } else if (targetUrl.pathname.startsWith('/kiosk/')) {
                         return targetUrl.href;
+                    } else {
+                        // Root-absolute path (e.g., /assets/...).
+                        // Determine siteId based on current page URL context.
+                        if (window.location.pathname.startsWith('/proxy/site2/')) {
+                            siteId = 'site2';
+                        } else if (window.location.pathname.startsWith('/proxy/site3/')) {
+                            siteId = 'site3';
+                        } else {
+                            siteId = 'site1';
+                        }
                     }
-                    // Site 1 (served at root /)
-                    return 'https://pave.pairs.site' + targetUrl.pathname + targetUrl.search + targetUrl.hash;
+                    
+                    if (siteId === 'site2') {
+                        return 'https://www.letstalkai.org.uk' + subpath + targetUrl.search + targetUrl.hash;
+                    } else if (siteId === 'site3') {
+                        return 'https://citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
+                    } else {
+                        return 'https://pave.pairs.site' + subpath + targetUrl.search + targetUrl.hash;
+                    }
                 }
                 return targetUrl.href;
             } catch(e) {
