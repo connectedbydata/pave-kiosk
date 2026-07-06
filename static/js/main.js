@@ -101,7 +101,9 @@ document.addEventListener("DOMContentLoaded", () => {
             connectionStatus.classList.remove("online");
             connectionStatus.classList.add("offline");
             statusText.textContent = "Offline";
-            offlineOverlay.classList.remove("hidden");
+            // Kiosk is designed to run from local files offline.
+            // Do not show blocking offline screen overlay.
+            offlineOverlay.classList.add("hidden");
         }
     }
 

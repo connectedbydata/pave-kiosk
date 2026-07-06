@@ -79,6 +79,31 @@ def get_injected_js(site_id):
     return """
     <script>
     (function() {
+        // Map local kiosk proxy URLs back to their original public URLs
+        function getPublicUrl(urlStr) {
+            try {
+                var targetUrl = new URL(urlStr, window.location.href);
+                if (targetUrl.origin === window.location.origin) {
+                    if (targetUrl.pathname.startsWith('/proxy/site2/')) {
+                        var subpath = targetUrl.pathname.substring('/proxy/site2'.length);
+                        return 'https://www.letstalkai.org.uk' + subpath + targetUrl.search + targetUrl.hash;
+                    }
+                    if (targetUrl.pathname.startsWith('/proxy/site3/')) {
+                        var subpath = targetUrl.pathname.substring('/proxy/site3'.length);
+                        return 'https://www.citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
+                    }
+                    if (targetUrl.pathname.startsWith('/kiosk/')) {
+                        return targetUrl.href;
+                    }
+                    // Site 1 (served at root /)
+                    return 'https://pave-live.pairs.site' + targetUrl.pathname + targetUrl.search + targetUrl.hash;
+                }
+                return targetUrl.href;
+            } catch(e) {
+                return urlStr;
+            }
+        }
+
         // Check if URL is considered "internal" to the kiosk allowed portals
         function getSiteIdForUrl(urlStr) {
             try {
@@ -122,6 +147,21 @@ def get_injected_js(site_id):
                 
                 // Resolve link relative to current document
                 var absoluteUrl = new URL(anchor.href, window.location.href);
+                
+                // Check if it is a PDF file (even if locally held)
+                var isPdf = absoluteUrl.pathname.toLowerCase().endsWith('.pdf');
+                if (isPdf) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    var publicUrl = getPublicUrl(absoluteUrl.href);
+                    window.parent.postMessage({
+                        type: 'EXTERNAL_NAVIGATION',
+                        url: publicUrl
+                    }, '*');
+                    return;
+                }
+                
                 var siteId = getSiteIdForUrl(absoluteUrl.href);
                 
                 if (siteId) {
