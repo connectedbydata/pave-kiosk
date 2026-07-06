@@ -162,6 +162,26 @@ body, html {
     transform: scale(1.05);
 }
 
+
+/* Sub-button navigation items */
+.nav-button.sub-button {
+    padding-left: 2.25rem;
+    font-size: 0.88rem;
+    min-height: 46px;
+    margin-top: -0.25rem;
+}
+
+.nav-button.sub-button::after {
+    content: '';
+    position: absolute;
+    left: 1.25rem;
+    top: -0.5rem;
+    width: 0.5rem;
+    height: 1.5rem;
+    border-left: 1.5px solid var(--border-color);
+    border-bottom: 1.5px solid var(--border-color);
+}
+
 /* Sidebar Footer & Utilities */
 .sidebar-footer {
     display: flex;

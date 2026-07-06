@@ -351,9 +351,16 @@ def sync_lets_talk_ai():
             else:
                 file_path = os.path.join(dest_dir, path, "index.html")
                 
+            # Remove srcset and sizes from all images to force using local src
+            for tag in soup.find_all(["img", "source"]):
+                if tag.has_attr("srcset"):
+                    del tag["srcset"]
+                if tag.has_attr("sizes"):
+                    del tag["sizes"]
+
             os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, "w", encoding="utf-8") as f:
-                f.write(html_content)
+                f.write(str(soup))
                 
         except Exception as e:
             print(f"  Error crawling {current_url}: {e}")
