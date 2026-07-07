@@ -68,6 +68,7 @@ if [ "$OS_TYPE" = "Darwin" ]; then
     if [ -f "$CHROME_PATH" ]; then
         "$CHROME_PATH" \
             --kiosk \
+            --incognito \
             --no-first-run \
             --no-default-browser-check \
             --disable-session-crashed-bubble \
@@ -75,7 +76,7 @@ if [ "$OS_TYPE" = "Darwin" ]; then
             "$URL"
     else
         # Fallback to default open command
-        open -a "Google Chrome" --args --kiosk "$URL" || open "$URL"
+        open -a "Google Chrome" --args --kiosk --incognito "$URL" || open "$URL"
     fi
 else
     # Linux / Raspberry Pi
@@ -101,11 +102,12 @@ else
         echo "Launching $BROWSER_CMD in kiosk mode..."
         if [ "$BROWSER_CMD" = "firefox" ]; then
             # Firefox kiosk mode
-            firefox --kiosk "$URL"
+            firefox --kiosk --private-window "$URL"
         else
             # Chromium / Chrome kiosk mode
             $BROWSER_CMD \
                 --kiosk \
+                --incognito \
                 --noerrdialogs \
                 --disable-infobars \
                 --disable-session-crashed-bubble \

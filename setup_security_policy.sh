@@ -30,7 +30,10 @@ POLICY_JSON='{
     "https://*.ytimg.com/*",
     "https://fonts.googleapis.com/*",
     "https://fonts.gstatic.com/*"
-  ]
+  ],
+  "AutofillAddressEnabled": false,
+  "AutofillCreditCardEnabled": false,
+  "PasswordManagerEnabled": false
 }'
 
 # Target directories for Chromium (standard on Raspberry Pi OS) and Google Chrome (general Linux)
