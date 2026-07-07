@@ -8,10 +8,18 @@ PORT=${KIOSK_PORT:-8080}
 HOST=${KIOSK_HOST:-"127.0.0.1"}
 URL="http://$HOST:$PORT/kiosk/"
 
-# Clean up background server on exit
+# Create a temporary directory for the browser profile to prevent using any existing autocomplete/session data
+USER_DATA_DIR=$(mktemp -d -t kiosk-browser-XXXXXX 2>/dev/null || mktemp -d)
+
+# Clean up background server and temporary files on exit
 cleanup() {
     echo "Stopping Flask server (PID: $FLASK_PID)..."
     kill $FLASK_PID 2>/dev/null
+    
+    if [ -n "$USER_DATA_DIR" ] && [ -d "$USER_DATA_DIR" ]; then
+        echo "Cleaning up temporary browser profile: $USER_DATA_DIR"
+        rm -rf "$USER_DATA_DIR"
+    fi
     exit 0
 }
 trap cleanup EXIT INT TERM
@@ -69,6 +77,7 @@ if [ "$OS_TYPE" = "Darwin" ]; then
         "$CHROME_PATH" \
             --kiosk \
             --incognito \
+            --user-data-dir="$USER_DATA_DIR" \
             --no-first-run \
             --no-default-browser-check \
             --disable-session-crashed-bubble \
@@ -76,7 +85,7 @@ if [ "$OS_TYPE" = "Darwin" ]; then
             "$URL"
     else
         # Fallback to default open command
-        open -a "Google Chrome" --args --kiosk --incognito "$URL" || open "$URL"
+        open -a "Google Chrome" --args --kiosk --incognito --user-data-dir="$USER_DATA_DIR" "$URL" || open "$URL"
     fi
 else
     # Linux / Raspberry Pi
@@ -102,12 +111,13 @@ else
         echo "Launching $BROWSER_CMD in kiosk mode..."
         if [ "$BROWSER_CMD" = "firefox" ]; then
             # Firefox kiosk mode
-            firefox --kiosk --private-window "$URL"
+            firefox --kiosk --private-window -profile "$USER_DATA_DIR" -no-remote -new-instance "$URL"
         else
             # Chromium / Chrome kiosk mode
             $BROWSER_CMD \
                 --kiosk \
                 --incognito \
+                --user-data-dir="$USER_DATA_DIR" \
                 --noerrdialogs \
                 --disable-infobars \
                 --disable-session-crashed-bubble \
