@@ -281,12 +281,25 @@ async def print_job(args):
             
     print(f"Connecting to BLE device at {address}...")
     
+    # Retrieve the BLEDevice object first if possible to avoid br-connection-profile-unavailable on Linux
+    target = address
+    try:
+        print("Locating BLEDevice for robust connection...")
+        device_obj = await BleakScanner.find_device_by_address(address, timeout=6.0)
+        if device_obj:
+            print("Successfully located BLEDevice object.")
+            target = device_obj
+        else:
+            print("BLEDevice not found in active scan, using raw address.")
+    except Exception as e:
+        print(f"Warning: Error finding BLEDevice: {e}. Using raw address.")
+
     # We use a retry loop to enter the context manager and execute printing
     connected = False
     for attempt in range(1, 4):
         try:
             print(f"Connection attempt {attempt}/3...")
-            async with BleakClient(address, timeout=12.0) as client:
+            async with BleakClient(target, timeout=12.0) as client:
                 print("Connected successfully!")
                 connected = True
                 
