@@ -499,10 +499,13 @@ def copy_and_customize_site4():
         with open(index_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
             
-        # Target for inserting the print takeaway button above controls and below cartoons
-        carousel_target = '    <div class="ltai-carousel-controls" role="group" aria-label="Carousel navigation">'
-
-        button_markup = """    <!-- Print Takeaway Button -->
+        soup = BeautifulSoup(content, "html.parser")
+        
+        # Inject print takeaway button above controls and below cartoons by finding #ltai-fan-stage
+        stage = soup.find(id="ltai-fan-stage")
+        if stage:
+            button_markup = """
+    <!-- Print Takeaway Button -->
     <div class="ltai-print-takeaway-container">
       <button class="ltai-print-takeaway-btn" id="ltai-print-takeaway-btn">
         <svg class="ltai-print-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -513,20 +516,12 @@ def copy_and_customize_site4():
         Print takeaway
       </button>
     </div>
-
-    <div class="ltai-carousel-controls" role="group" aria-label="Carousel navigation">"""
-
-        if carousel_target in content:
-            content = content.replace(carousel_target, button_markup)
-            print("✓ Injected Print takeaway button markup.")
+"""
+            button_soup = BeautifulSoup(button_markup, "html.parser")
+            stage.insert_after(button_soup)
+            print("✓ Injected Print takeaway button markup using BeautifulSoup.")
         else:
-            # Fallback: check if it exists stripped of leading/trailing whitespaces
-            normalized_target = carousel_target.strip()
-            if normalized_target in content:
-                content = content.replace(normalized_target, button_markup.strip())
-                print("✓ Injected Print takeaway button markup (normalized).")
-            else:
-                print("Warning: Could not find carousel target string in index.html to inject button.")
+            print("Warning: Could not find element #ltai-fan-stage in index.html to inject button.")
                 
         # Inject styles, modal HTML and JS before </body>
         modal_injection = """
@@ -977,12 +972,14 @@ def copy_and_customize_site4():
 </script>
 </body>"""
 
-        if "</body>" in content:
-            content = content.replace("</body>", modal_injection)
-            print("✓ Injected styles, modal HTML and script before </body>.")
+        if soup.body:
+            modal_soup = BeautifulSoup(modal_injection, "html.parser")
+            soup.body.append(modal_soup)
+            print("✓ Injected styles, modal HTML and script before </body> using BeautifulSoup.")
         else:
-            content += modal_injection
-            print("✓ Appended styles, modal HTML and script (no </body> found).")
+            print("Warning: No body element found in index.html.")
+            
+        content = str(soup)
             
         with open(index_path, "w", encoding="utf-8") as f:
             f.write(content)
