@@ -283,6 +283,7 @@ job_errors = {}
 def print_worker():
     """Processes print jobs sequentially in a background thread to prevent blocking Flask."""
     import sys
+    import platform
     while True:
         job = print_queue.get()
         if job is None:
@@ -294,7 +295,12 @@ def print_worker():
             python_exec = sys.executable
             kiosk_dir = os.path.dirname(os.path.abspath(__file__))
             helper_script = os.path.join(kiosk_dir, "print_helper.py")
-            result = subprocess.run([python_exec, helper_script, "--type", print_type, "--episode", str(episode)], capture_output=True, text=True)
+            
+            cmd = [python_exec, helper_script, "--type", print_type, "--episode", str(episode)]
+            if platform.system() == "Linux":
+                cmd = ["sudo"] + cmd
+                
+            result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:
                 print(f"[Print Worker] Job {job_id} finished successfully. Output:\n{result.stdout}")
                 job_states[job_id] = "completed"
