@@ -290,8 +290,9 @@ def print_worker():
         job_states[job_id] = "printing"
         try:
             print(f"[Print Worker] Starting job {job_id}: type={print_type}, episode={episode}")
-            python_exec = "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro/venv/bin/python"
-            helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "print_helper.py")
+            kiosk_dir = os.path.dirname(os.path.abspath(__file__))
+            python_exec = os.path.abspath(os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro", "venv", "bin", "python"))
+            helper_script = os.path.join(kiosk_dir, "print_helper.py")
             result = subprocess.run([python_exec, helper_script, "--type", print_type, "--episode", str(episode)], capture_output=True, text=True)
             if result.returncode == 0:
                 print(f"[Print Worker] Job {job_id} finished successfully. Output:\n{result.stdout}")

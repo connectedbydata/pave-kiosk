@@ -5,8 +5,11 @@ import asyncio
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
 
+# Resolve paths dynamically relative to this script's directory
+kiosk_dir = os.path.dirname(os.path.abspath(__file__))
+
 # Add Orgbro directory to path so we can import print_image
-ORGBRO_DIR = "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro"
+ORGBRO_DIR = os.path.abspath(os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"))
 sys.path.append(ORGBRO_DIR)
 
 try:
@@ -23,9 +26,9 @@ def generate_teaser(episode_idx, output_path):
     # Episode 1: Education
     # Episode 2: Bus stop / How We Use It
     covers = [
-        "/Users/admin/Documents/ConnectedByData/kiosk/sites/site4/toons/assets/img/lets-talk-ai-media-1-carousel.webp",
-        "/Users/admin/Documents/ConnectedByData/kiosk/sites/site4/toons/assets/img/lets-talk-ai-education-1-carousel.webp",
-        "/Users/admin/Documents/ConnectedByData/kiosk/sites/site4/toons/assets/img/lets-talk-ai-bus-stop-1-carousel.webp"
+        os.path.join(kiosk_dir, "sites", "site4", "toons", "assets", "img", "lets-talk-ai-media-1-carousel.webp"),
+        os.path.join(kiosk_dir, "sites", "site4", "toons", "assets", "img", "lets-talk-ai-education-1-carousel.webp"),
+        os.path.join(kiosk_dir, "sites", "site4", "toons", "assets", "img", "lets-talk-ai-bus-stop-1-carousel.webp")
     ]
     urls = [
         "https://www.letstalkai.org.uk/toons/media.html",
@@ -137,7 +140,7 @@ def main():
     parser.add_argument("--episode", required=True, type=int, help="Episode index (0, 1, 2)")
     args = parser.parse_args()
     
-    temp_dir = "/Users/admin/Documents/ConnectedByData/kiosk/static"
+    temp_dir = os.path.join(kiosk_dir, "static")
     os.makedirs(temp_dir, exist_ok=True)
     temp_path = os.path.join(temp_dir, "temp_print_job.png")
     
@@ -150,9 +153,9 @@ def main():
     else:
         # Full scroll
         full_scrolls = [
-            "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro/images/lets-talk-ai-media.png",
-            "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro/images/lets-talk-ai-education.png",
-            "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro/images/lets-talk-ai-bus-stop.png"
+            os.path.join(ORGBRO_DIR, "images", "lets-talk-ai-media.png"),
+            os.path.join(ORGBRO_DIR, "images", "lets-talk-ai-education.png"),
+            os.path.join(ORGBRO_DIR, "images", "lets-talk-ai-bus-stop.png")
         ]
         if args.episode < 0 or args.episode >= len(full_scrolls):
             print(f"Error: Invalid episode index {args.episode}", file=sys.stderr)
