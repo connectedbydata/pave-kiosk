@@ -199,7 +199,10 @@ async def send_packet_with_credit(client, write_char, cmd, seq, payload, chunk_s
     global credits_available
     while credits_available <= 0:
         credits_event.clear()
-        await credits_event.wait()
+        try:
+            await asyncio.wait_for(credits_event.wait(), timeout=15.0)
+        except asyncio.TimeoutError:
+            raise TimeoutError("Timeout waiting for printer credit notification.")
         
     credits_available -= 1
     packet = wrap_sent_packet(cmd, seq, payload)
@@ -283,7 +286,7 @@ async def print_job(args):
     for attempt in range(1, 4):
         try:
             print(f"Connection attempt {attempt}/3...")
-            async with BleakClient(address) as client:
+            async with BleakClient(address, timeout=12.0) as client:
                 print("Connected successfully!")
                 connected = True
                 
