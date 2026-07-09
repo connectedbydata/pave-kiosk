@@ -14,7 +14,7 @@ async def main():
             
         is_printer = "ORGBRO" in name.upper() or name.upper() == "X3"
         prefix = "⭐️ [PRINTER] " if is_printer else "             "
-        print(f"  {prefix}Address: {device.address} | Name: {name} | RSSI: {device.rssi}dBm")
+        print(f"  {prefix}Address: {device.address} | Name: {name} | RSSI: {advertising_data.rssi}dBm")
         
         if is_printer and device.address not in [d.address for d in orgbro_devices]:
             orgbro_devices.append(device)
