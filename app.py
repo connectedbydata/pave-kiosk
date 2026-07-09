@@ -1,6 +1,9 @@
 import os
 import re
 import requests
+import queue
+import threading
+import subprocess
 from flask import Flask, render_template, redirect, request, Response, send_from_directory
 
 app = Flask(__name__)
@@ -17,6 +20,13 @@ app.config.update(
     SITE_3_URL="https://citizens-track.org/?kiosk",
 )
 
+@app.after_request
+def add_header(response):
+    response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    return response
+
 def serve_local(site_id, subpath=""):
     # Normalize paths to prevent path traversal
     if ".." in subpath or subpath.startswith("/"):
@@ -30,6 +40,8 @@ def serve_local(site_id, subpath=""):
         site_dir = os.path.join(sites_dir, "site2")
     elif site_id == "site3":
         site_dir = os.path.join(sites_dir, "site3")
+    elif site_id == "site4":
+        site_dir = os.path.join(sites_dir, "site4")
     else:
         return "Not Found", 404
 
@@ -91,6 +103,9 @@ def get_injected_js(site_id):
                     if (targetUrl.pathname.startsWith('/proxy/site2/')) {
                         siteId = 'site2';
                         subpath = targetUrl.pathname.substring('/proxy/site2'.length);
+                    } else if (targetUrl.pathname.startsWith('/site4/')) {
+                        siteId = 'site4';
+                        subpath = targetUrl.pathname.substring('/site4'.length);
                     } else if (targetUrl.pathname.startsWith('/proxy/site3/')) {
                         siteId = 'site3';
                         subpath = targetUrl.pathname.substring('/proxy/site3'.length);
@@ -101,6 +116,8 @@ def get_injected_js(site_id):
                         // Determine siteId based on current page URL context.
                         if (window.location.pathname.startsWith('/proxy/site2/')) {
                             siteId = 'site2';
+                        } else if (window.location.pathname.startsWith('/site4/')) {
+                            siteId = 'site4';
                         } else if (window.location.pathname.startsWith('/proxy/site3/')) {
                             siteId = 'site3';
                         } else {
@@ -108,7 +125,7 @@ def get_injected_js(site_id):
                         }
                     }
                     
-                    if (siteId === 'site2') {
+                    if (siteId === 'site2' || siteId === 'site4') {
                         return 'https://www.letstalkai.org.uk' + subpath + targetUrl.search + targetUrl.hash;
                     } else if (siteId === 'site3') {
                         return 'https://citizens-track.org' + subpath + targetUrl.search + targetUrl.hash;
@@ -130,6 +147,7 @@ def get_injected_js(site_id):
                 // If it's already a proxied URL on the same origin, determine its siteId
                 if (targetUrl.origin === window.location.origin) {
                     if (targetUrl.pathname.startsWith('/proxy/site2/')) return 'site2';
+                    if (targetUrl.pathname.startsWith('/site4/')) return 'site4';
                     if (targetUrl.pathname.startsWith('/proxy/site3/')) return 'site3';
                     // The kiosk UI is not a portal site
                     if (targetUrl.pathname.startsWith('/kiosk/')) return null;
@@ -143,6 +161,9 @@ def get_injected_js(site_id):
                     return 'site1';
                 }
                 if (host === "www.letstalkai.org.uk" || host === "letstalkai.org.uk" || host.endsWith(".letstalkai.org.uk")) {
+                    if (window.location.pathname.startsWith('/site4/')) {
+                        return 'site4';
+                    }
                     return 'site2';
                 }
                 if (host === "citizens-track.org" || host === "www.citizens-track.org" || host.endsWith(".citizens-track.org")) {
@@ -192,7 +213,7 @@ def get_injected_js(site_id):
                     if (absoluteUrl.origin === window.location.origin) {
                         window.location.href = absoluteUrl.href;
                     } else {
-                        var prefix = siteId === 'site1' ? '' : '/proxy/' + siteId;
+                        var prefix = siteId === 'site1' ? '' : (siteId === 'site4' ? '/site4' : '/proxy/' + siteId);
                         window.location.href = window.location.origin + prefix + pathAndParams;
                     }
                 } else {
@@ -244,18 +265,96 @@ def proxy_route(site_id, subpath=""):
         return "Not Found", 404
     return serve_local(site_id, subpath)
 
+# Alternative Let's Talk AI routes (Site 4)
+@app.route("/site4")
+def site4_redirect():
+    return redirect("/site4/", code=301)
+
+@app.route("/site4/")
+@app.route("/site4/<path:subpath>")
+def site4_route(subpath=""):
+    return serve_local("site4", subpath)
+
+# Thread-safe print queue for background printing
+print_queue = queue.Queue()
+job_states = {}
+job_errors = {}
+
+def print_worker():
+    """Processes print jobs sequentially in a background thread to prevent blocking Flask."""
+    while True:
+        job = print_queue.get()
+        if job is None:
+            break
+        print_type, episode, job_id = job
+        job_states[job_id] = "printing"
+        try:
+            print(f"[Print Worker] Starting job {job_id}: type={print_type}, episode={episode}")
+            python_exec = "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro/venv/bin/python"
+            helper_script = os.path.join(os.path.dirname(os.path.abspath(__file__)), "print_helper.py")
+            result = subprocess.run([python_exec, helper_script, "--type", print_type, "--episode", str(episode)], capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"[Print Worker] Job {job_id} finished successfully. Output:\n{result.stdout}")
+                job_states[job_id] = "completed"
+            else:
+                err_msg = result.stderr.strip() if result.stderr else f"Exit code {result.returncode}"
+                print(f"[Print Worker] Job {job_id} failed. Error:\n{err_msg}")
+                job_states[job_id] = "failed"
+                job_errors[job_id] = err_msg
+        except Exception as e:
+            print(f"[Print Worker] Exception running print job {job_id}: {e}")
+            job_states[job_id] = "failed"
+            job_errors[job_id] = str(e)
+        finally:
+            print_queue.task_done()
+
+# Start background thread
+worker_thread = threading.Thread(target=print_worker, daemon=True)
+worker_thread.start()
+
+@app.route("/site4/api/print", methods=["POST"])
+def site4_print():
+    data = request.get_json() or {}
+    print_type = data.get("type")
+    episode = data.get("episode")
+    
+    if print_type == "full scroll":
+        print_type = "full"
+        
+    if print_type not in ["teaser", "full"] or episode not in [0, 1, 2]:
+        return {"status": "error", "message": "Invalid print request parameters. Must specify type (teaser/full) and episode (0, 1, 2)."}, 400
+        
+    import uuid
+    job_id = f"{print_type}-{episode}-{str(uuid.uuid4())[:6]}"
+    job_states[job_id] = "queued"
+    
+    print_queue.put((print_type, episode, job_id))
+    return {"status": "success", "message": "Print job queued successfully.", "job_id": job_id}
+
+@app.route("/site4/api/status/<job_id>", methods=["GET"])
+def site4_status(job_id):
+    state = job_states.get(job_id, "completed")
+    error_msg = job_errors.get(job_id, "")
+    return {
+        "job_id": job_id,
+        "status": state,
+        "error": error_msg
+    }
+
 # Core root handler (matches anything that doesn't match other routes)
 @app.route("/", defaults={"subpath": ""})
 @app.route("/<path:subpath>")
 def root_route(subpath=""):
     # Exclude system static assets, proxy routes, health checks, and kiosk portal
-    if subpath.startswith("static/") or subpath.startswith("proxy/") or subpath == "health" or subpath == "kiosk" or subpath.startswith("kiosk/"):
+    if subpath.startswith("static/") or subpath.startswith("proxy/") or subpath == "health" or subpath == "kiosk" or subpath.startswith("kiosk/") or subpath.startswith("site4") or subpath == "site4":
         return "Not Found", 404
         
-    # Check referer to catch escaped assets for site2 and site3
+    # Check referer to catch escaped assets for site2, site3, and site4
     referer = request.headers.get("Referer", "")
     if "/proxy/site2" in referer:
         return redirect(f"/proxy/site2/{subpath}", code=302)
+    elif "/site4" in referer:
+        return redirect(f"/site4/{subpath}", code=302)
     elif "/proxy/site3" in referer:
         return redirect(f"/proxy/site3/{subpath}", code=302)
 
