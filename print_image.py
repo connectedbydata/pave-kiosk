@@ -9,6 +9,8 @@ from PIL import Image, ImageOps, ImageDraw, ImageFont
 # Default BLE printer details for Orgbro X3
 if platform.system() == "Darwin":
     DEFAULT_ADDRESS = "8BAC0268-BE53-F740-7877-32C3490B6F75"
+elif platform.system() == "Linux":
+    DEFAULT_ADDRESS = "05:04:00:00:B6:98"
 else:
     DEFAULT_ADDRESS = "auto"
 
