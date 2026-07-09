@@ -8,8 +8,38 @@ from PIL import Image, ImageDraw, ImageFont
 # Resolve paths dynamically relative to this script's directory
 kiosk_dir = os.path.dirname(os.path.abspath(__file__))
 
+def find_orgbro_dir():
+    """Locate the Orgbro directory on both development and kiosk machines."""
+    home_dir = os.path.expanduser("~")
+    candidates = [
+        # Sibling CitizensTrack (Dev machine)
+        os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"),
+        # Sibling directly
+        os.path.join(kiosk_dir, "..", "Orgbro"),
+        os.path.join(kiosk_dir, "..", "orgbro"),
+        os.path.join(kiosk_dir, "..", "orgbro_printer"),
+        # Home directory candidates
+        os.path.join(home_dir, "orgbro"),
+        os.path.join(home_dir, "orgbro_printer"),
+        os.path.join(home_dir, "CitizensTrack", "Orgbro"),
+        os.path.join(home_dir, "Documents", "ConnectedByData", "CitizensTrack", "Orgbro"),
+        # Hardcoded target paths
+        "/home/admin/orgbro_printer",
+        "/home/admin/orgbro",
+        "/home/admin/CitizensTrack/Orgbro",
+        "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro"
+    ]
+    for c in candidates:
+        abs_path = os.path.abspath(c)
+        py_path = os.path.join(abs_path, "venv", "bin", "python")
+        if os.path.exists(py_path):
+            return abs_path
+            
+    # Fallback to dev path
+    return os.path.abspath(os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"))
+
 # Add Orgbro directory to path so we can import print_image
-ORGBRO_DIR = os.path.abspath(os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"))
+ORGBRO_DIR = find_orgbro_dir()
 sys.path.append(ORGBRO_DIR)
 
 try:
