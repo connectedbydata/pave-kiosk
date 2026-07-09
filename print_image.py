@@ -209,14 +209,30 @@ async def send_packet_with_credit(client, write_char, cmd, seq, payload, chunk_s
         await client.write_gatt_char(write_char, chunk, response=False)
         await asyncio.sleep(chunk_delay)
 
-async def discover_printer(timeout=5.0):
+async def discover_printer(timeout=8.0):
     print("Scanning for ORGBRO thermal printer...")
-    devices = await BleakScanner.discover(timeout=timeout)
-    for d in devices:
-        if d.name and ("ORGBRO" in d.name.upper() or d.name.upper() == "X3"):
-            print(f"Discovered ORGBRO printer: {d.name} [{d.address}]")
-            return d.address
-    return None
+    found_address = None
+    event = asyncio.Event()
+
+    def callback(device, advertising_data):
+        nonlocal found_address
+        name = device.name if device.name else ""
+        if "ORGBRO" in name.upper() or name.upper() == "X3":
+            found_address = device.address
+            print(f"Discovered ORGBRO printer: {name} [{device.address}]")
+            event.set()
+
+    scanner = BleakScanner(callback)
+    await scanner.start()
+    try:
+        # Wait up to the timeout for discovery event
+        await asyncio.wait_for(event.wait(), timeout=timeout)
+    except asyncio.TimeoutError:
+        pass
+    finally:
+        await scanner.stop()
+        
+    return found_address
 
 async def print_job(args):
     global credits_available, credits_event, handshake_f1_event, handshake_f2_event
