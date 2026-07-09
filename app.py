@@ -280,41 +280,9 @@ print_queue = queue.Queue()
 job_states = {}
 job_errors = {}
 
-def find_orgbro_dir():
-    """Locate the Orgbro directory on both development and kiosk machines."""
-    kiosk_dir = os.path.dirname(os.path.abspath(__file__))
-    home_dir = os.path.expanduser("~")
-    
-    candidates = [
-        # Sibling CitizensTrack (Dev machine)
-        os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"),
-        # Sibling directly (if cloned as sibling directly)
-        os.path.join(kiosk_dir, "..", "Orgbro"),
-        os.path.join(kiosk_dir, "..", "orgbro"),
-        os.path.join(kiosk_dir, "..", "orgbro_printer"),
-        # Home directory candidates
-        os.path.join(home_dir, "orgbro"),
-        os.path.join(home_dir, "orgbro_printer"),
-        os.path.join(home_dir, "CitizensTrack", "Orgbro"),
-        os.path.join(home_dir, "Documents", "ConnectedByData", "CitizensTrack", "Orgbro"),
-        # Hardcoded target paths
-        "/home/admin/orgbro_printer",
-        "/home/admin/orgbro",
-        "/home/admin/CitizensTrack/Orgbro",
-        "/Users/admin/Documents/ConnectedByData/CitizensTrack/Orgbro"
-    ]
-    
-    for c in candidates:
-        abs_path = os.path.abspath(c)
-        py_path = os.path.join(abs_path, "venv", "bin", "python")
-        if os.path.exists(py_path):
-            return abs_path
-            
-    # Fallback to standard dev path
-    return os.path.abspath(os.path.join(kiosk_dir, "..", "CitizensTrack", "Orgbro"))
-
 def print_worker():
     """Processes print jobs sequentially in a background thread to prevent blocking Flask."""
+    import sys
     while True:
         job = print_queue.get()
         if job is None:
@@ -323,8 +291,7 @@ def print_worker():
         job_states[job_id] = "printing"
         try:
             print(f"[Print Worker] Starting job {job_id}: type={print_type}, episode={episode}")
-            orgbro_dir = find_orgbro_dir()
-            python_exec = os.path.join(orgbro_dir, "venv", "bin", "python")
+            python_exec = sys.executable
             kiosk_dir = os.path.dirname(os.path.abspath(__file__))
             helper_script = os.path.join(kiosk_dir, "print_helper.py")
             result = subprocess.run([python_exec, helper_script, "--type", print_type, "--episode", str(episode)], capture_output=True, text=True)

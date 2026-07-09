@@ -6,3 +6,6 @@ pyyaml>=6.0.1
 python-dotenv>=1.0.0
 pyairtable>=2.2.0
 pycountry-convert>=0.7.2
+bleak>=3.0.2
+pillow>=12.2.0
+qrcode>=8.2
